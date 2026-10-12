@@ -2,16 +2,16 @@
 
 <div class="theme-panel">
   {{ if eq .Mode "register" }}
-  <h2 class="theme-heading">Register security key</h2>
-  <p>Register a security key for two-factor authentication.</p>
+  <h2 class="theme-heading">{{ .T "registerSecurityKey" }}</h2>
+  <p>{{ .T "registerSecurityKeyDesc" }}</p>
   {{ else }}
-  <h2 class="theme-heading">Two-factor authentication</h2>
-  <p>Use your security key to verify your identity.</p>
+  <h2 class="theme-heading">{{ .T "twoFactor" }}</h2>
+  <p>{{ .T "useSecurityKey" }}</p>
   {{ end }}
 
   <div id="webauthn-error" class="dex-error-box" style="display: none;"></div>
   <div id="webauthn-working" style="display: none; text-align: center; margin: 1em 0;">
-    <p>Waiting for security key...</p>
+    <p>{{ .T "waitingForSecurityKey" }}</p>
   </div>
 
   <button id="webauthn-btn" type="button" class="dex-btn theme-btn--primary" onclick="startWebAuthn()">

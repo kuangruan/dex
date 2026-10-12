@@ -21,21 +21,21 @@
   <div class="dex-info-table">
     {{ if .Username }}
     <div class="dex-info-row">
-      <span class="dex-info-label">Username</span>
+      <span class="dex-info-label">{{ .T "username" }}</span>
       {{ template "info-value" .Username }}
     </div>
     {{ end }}
     {{ if .Email }}
     <div class="dex-info-row">
-      <span class="dex-info-label">Email</span>
+      <span class="dex-info-label">{{ .T "email" }}</span>
       <span class="dex-info-value">{{ .Email }}{{ if .EmailVerified }} &#10003;{{ end }}</span>
     </div>
     {{ end }}
     {{ if .Groups }}
     <div class="dex-info-row">
-      <span class="dex-info-label">Groups</span>
+      <span class="dex-info-label">{{ .T "groups" }}</span>
       <details class="dex-info-details">
-        <summary>{{ len .Groups }} group{{ if gt (len .Groups) 1 }}s{{ end }}</summary>
+        <summary>{{ if gt (len .Groups) 1 }}{{ .T "groupsCountMany" (len .Groups) }}{{ else }}{{ .T "groupsCountOne" (len .Groups) }}{{ end }}</summary>
         <ul class="dex-info-details__list">
           {{ range .Groups }}<li>{{ . }}</li>{{ end }}
         </ul>
@@ -44,25 +44,25 @@
     {{ end }}
     {{ if .ConnectorName }}
     <div class="dex-info-row">
-      <span class="dex-info-label">Connector</span>
+      <span class="dex-info-label">{{ .T "connector" }}</span>
       {{ template "info-value" .ConnectorName }}
     </div>
     {{ end }}
     {{ if .IPAddress }}
     <div class="dex-info-row">
-      <span class="dex-info-label">IP address</span>
+      <span class="dex-info-label">{{ .T "ipAddress" }}</span>
       {{ template "info-value" .IPAddress }}
     </div>
     {{ end }}
     {{ if .UserAgent }}
     <div class="dex-info-row">
-      <span class="dex-info-label">Browser</span>
+      <span class="dex-info-label">{{ .T "browser" }}</span>
       {{ template "info-value" .UserAgent }}
     </div>
     {{ end }}
     {{ if .LastLoginEpoch }}
     <div class="dex-info-row">
-      <span class="dex-info-label">Last login</span>
+      <span class="dex-info-label">{{ .T "lastLogin" }}</span>
       <span class="dex-info-value" id="last-login"></span>
     </div>
     {{ end }}
@@ -70,16 +70,16 @@
   <hr class="dex-separator">
 
   <div class="theme-form-row">
-    <a href="{{ .LogoutURL }}" class="dex-btn theme-btn--primary" style="display: inline-block; text-decoration: none; padding: 8px 16px;">Logout</a>
+    <a href="{{ .LogoutURL }}" class="dex-btn theme-btn--primary" style="display: inline-block; text-decoration: none; padding: 8px 16px;">{{ .T "logout" }}</a>
   </div>
   {{ else }}
   <div>
-    <div class="dex-subtle-text">Not logged in</div>
+    <div class="dex-subtle-text">{{ .T "notLoggedIn" }}</div>
   </div>
   {{ end }}
 
   <div class="theme-form-row">
-    <a href="{{ .DiscoveryURL }}" class="dex-subtle-text">Discovery</a>
+    <a href="{{ .DiscoveryURL }}" class="dex-subtle-text">{{ .T "discovery" }}</a>
   </div>
 </div>
 

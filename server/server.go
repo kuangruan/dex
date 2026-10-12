@@ -190,6 +190,14 @@ type WebConfig struct {
 
 	// Map of extra values passed into the templates
 	Extra map[string]string
+
+	// Translations extends or overrides the bundled UI dictionaries, keyed by
+	// language tag, e.g. {"zh": {"logInTitle": "Log in to Your Account"}}.
+	//
+	// The lookup order for a message is: requested locale, English, the key
+	// itself. A tag without a bundled dictionary (e.g. "de") becomes selectable
+	// through Accept-Language, ?lang= and the dex_lang cookie as well.
+	Translations map[string]map[string]string
 }
 
 // PKCEConfig holds PKCE (Proof Key for Code Exchange) settings.
@@ -346,6 +354,8 @@ func newServer(ctx context.Context, c Config) (*Server, error) {
 		issuer:    c.Web.Issuer,
 		theme:     c.Web.Theme,
 		extra:     c.Web.Extra,
+
+		translations: c.Web.Translations,
 	}
 
 	static, theme, robots, tmpls, err := loadWebConfig(web)

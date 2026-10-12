@@ -54,6 +54,8 @@ type templates struct {
 	webauthnVerifyTmpl *template.Template
 	homeTmpl           *template.Template
 	logoutTmpl         *template.Template
+
+	i18n *i18nFactory
 }
 
 type webConfig struct {
@@ -63,6 +65,8 @@ type webConfig struct {
 	theme     string
 	issuerURL string
 	extra     map[string]string
+
+	translations map[string]map[string]string
 }
 
 func getFuncMap(c webConfig) (template.FuncMap, error) {
@@ -174,6 +178,7 @@ func loadTemplates(c webConfig, templatesDir string) (*templates, error) {
 		return nil, fmt.Errorf("missing template(s): %s", missingTmpls)
 	}
 	return &templates{
+		i18n:               newI18nFactory(c.translations),
 		loginTmpl:          tmpls.Lookup(tmplLogin),
 		approvalTmpl:       tmpls.Lookup(tmplApproval),
 		passwordTmpl:       tmpls.Lookup(tmplPassword),
@@ -289,28 +294,31 @@ func (t *templates) device(r *http.Request, w http.ResponseWriter, postURL strin
 		w.WriteHeader(http.StatusBadRequest)
 	}
 	data := struct {
+		i18nData
 		PostURL  string
 		UserCode string
 		Invalid  bool
 		ReqPath  string
-	}{postURL, userCode, lastWasInvalid, r.URL.Path}
+	}{i18nData: t.i18n.data(r), PostURL: postURL, UserCode: userCode, Invalid: lastWasInvalid, ReqPath: r.URL.Path}
 	return renderTemplate(w, t.deviceTmpl, data)
 }
 
 func (t *templates) deviceSuccess(r *http.Request, w http.ResponseWriter, clientName string) error {
 	data := struct {
+		i18nData
 		ClientName string
 		ReqPath    string
-	}{clientName, r.URL.Path}
+	}{i18nData: t.i18n.data(r), ClientName: clientName, ReqPath: r.URL.Path}
 	return renderTemplate(w, t.deviceSuccessTmpl, data)
 }
 
 func (t *templates) login(r *http.Request, w http.ResponseWriter, connectors []connectorInfo) error {
 	sort.Sort(byName(connectors))
 	data := struct {
+		i18nData
 		Connectors []connectorInfo
 		ReqPath    string
-	}{connectors, r.URL.Path}
+	}{i18nData: t.i18n.data(r), Connectors: connectors, ReqPath: r.URL.Path}
 	return renderTemplate(w, t.loginTmpl, data)
 }
 
@@ -319,6 +327,7 @@ func (t *templates) password(r *http.Request, w http.ResponseWriter, postURL, la
 		w.WriteHeader(http.StatusUnauthorized)
 	}
 	data := struct {
+		i18nData
 		PostURL           string
 		BackLink          string
 		Username          string
@@ -328,6 +337,7 @@ func (t *templates) password(r *http.Request, w http.ResponseWriter, postURL, la
 		ShowRememberMe    bool
 		RememberMeChecked bool
 	}{
+		i18nData:       t.i18n.data(r),
 		PostURL:        postURL,
 		BackLink:       backLink,
 		Username:       lastUsername,
@@ -343,21 +353,23 @@ func (t *templates) password(r *http.Request, w http.ResponseWriter, postURL, la
 }
 
 func (t *templates) approval(r *http.Request, w http.ResponseWriter, authReqID, username, clientName string, scopes []string) error {
+	i18n := t.i18n.translator(r)
 	accesses := []string{}
 	for _, scope := range scopes {
 		access, ok := scopeDescriptions[scope]
 		if ok {
-			accesses = append(accesses, access)
+			accesses = append(accesses, i18n.TOr("scope."+scope, access))
 		}
 	}
 	sort.Strings(accesses)
 	data := struct {
+		i18nData
 		User      string
 		Client    string
 		AuthReqID string
 		Scopes    []string
 		ReqPath   string
-	}{username, clientName, authReqID, accesses, r.URL.Path}
+	}{i18nData: t.i18n.data(r), User: username, Client: clientName, AuthReqID: authReqID, Scopes: accesses, ReqPath: r.URL.Path}
 	return renderTemplate(w, t.approvalTmpl, data)
 }
 
@@ -366,17 +378,19 @@ func (t *templates) totpVerify(r *http.Request, w http.ResponseWriter, postURL, 
 		w.WriteHeader(http.StatusUnauthorized)
 	}
 	data := struct {
+		i18nData
 		PostURL   string
 		Invalid   bool
 		Issuer    string
 		Connector string
 		QRCode    string
 		ReqPath   string
-	}{postURL, lastWasInvalid, issuer, connector, qrCode, r.URL.Path}
+	}{i18nData: t.i18n.data(r), PostURL: postURL, Invalid: lastWasInvalid, Issuer: issuer, Connector: connector, QRCode: qrCode, ReqPath: r.URL.Path}
 	return renderTemplate(w, t.totpVerifyTmpl, data)
 }
 
 type homeData struct {
+	i18nData
 	LoggedIn       bool
 	Username       string
 	Email          string
@@ -393,44 +407,49 @@ type homeData struct {
 
 func (t *templates) home(r *http.Request, w http.ResponseWriter, data homeData) error {
 	data.ReqPath = r.URL.Path
+	data.i18nData = t.i18n.data(r)
 	return renderTemplate(w, t.homeTmpl, data)
 }
 
 func (t *templates) logout(r *http.Request, w http.ResponseWriter, backURL string, loggedOut bool) error {
 	data := struct {
+		i18nData
 		BackURL   string
 		LoggedOut bool
 		ReqPath   string
-	}{backURL, loggedOut, r.URL.Path}
+	}{i18nData: t.i18n.data(r), BackURL: backURL, LoggedOut: loggedOut, ReqPath: r.URL.Path}
 	return renderTemplate(w, t.logoutTmpl, data)
 }
 
 func (t *templates) webauthnVerify(r *http.Request, w http.ResponseWriter, mode, authenticatorID string) error {
 	data := struct {
+		i18nData
 		// Mode must be server-controlled ("register" or "login") and never derived
 		// from user input to prevent XSS in the template's script context.
 		Mode            string
 		AuthenticatorID string
 		ReqPath         string
-	}{mode, authenticatorID, r.URL.Path}
+	}{i18nData: t.i18n.data(r), Mode: mode, AuthenticatorID: authenticatorID, ReqPath: r.URL.Path}
 	return renderTemplate(w, t.webauthnVerifyTmpl, data)
 }
 
 func (t *templates) oob(r *http.Request, w http.ResponseWriter, code string) error {
 	data := struct {
+		i18nData
 		Code    string
 		ReqPath string
-	}{code, r.URL.Path}
+	}{i18nData: t.i18n.data(r), Code: code, ReqPath: r.URL.Path}
 	return renderTemplate(w, t.oobTmpl, data)
 }
 
 func (t *templates) err(r *http.Request, w http.ResponseWriter, errCode int, errMsg string) error {
 	w.WriteHeader(errCode)
 	data := struct {
+		i18nData
 		ErrType string
 		ErrMsg  string
 		ReqPath string
-	}{http.StatusText(errCode), errMsg, r.URL.Path}
+	}{i18nData: t.i18n.data(r), ErrType: http.StatusText(errCode), ErrMsg: errMsg, ReqPath: r.URL.Path}
 	if err := t.errorTmpl.Execute(w, data); err != nil {
 		return fmt.Errorf("rendering template %s failed: %s", t.errorTmpl.Name(), err)
 	}
