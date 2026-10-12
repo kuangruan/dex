@@ -173,6 +173,12 @@ func (d i18nData) T(key string, args ...interface{}) string {
 	return d.tr.T(key, args...)
 }
 
+// TOr behaves like T but renders fallback when key is unknown, for templates that
+// translate values coming from configuration ({{ .TOr (printf "prompt.%s" .Prompt) .Prompt }}).
+func (d i18nData) TOr(key, fallback string, args ...interface{}) string {
+	return d.tr.TOr(key, fallback, args...)
+}
+
 // i18nFactory builds the per-request translation data from the bundled dictionaries
 // merged with the operator-supplied WebConfig.Translations.
 type i18nFactory struct {

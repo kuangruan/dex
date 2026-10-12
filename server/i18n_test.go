@@ -162,3 +162,17 @@ func TestRenderLocalizedPages(t *testing.T) {
 		}
 	})
 }
+
+func TestTemplateFallbackHelper(t *testing.T) {
+	factory := newI18nFactory(map[string]map[string]string{"zh": {"prompt.Email": "邮箱"}})
+	data := factory.data(httptest.NewRequest(http.MethodGet, "/auth?lang=zh", nil))
+	if got := data.TOr("prompt.Email", "Email"); got != "邮箱" {
+		t.Errorf("TOr zh entry: got %q", got)
+	}
+	if got := data.TOr("prompt.Username", "Username"); got != "Username" {
+		t.Errorf("TOr fallback: got %q", got)
+	}
+	if got := data.TOr("prompt.Username", "Username", 1); got != "Username" {
+		t.Errorf("TOr fallback ignores args: got %q", got)
+	}
+}
