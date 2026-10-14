@@ -1,7 +1,17 @@
 {{ template "header.html" . }}
 
 <div class="theme-panel">
-  {{ if .LoggedOut }}
+  {{ if .ShowConfirmation }}
+  <h2 class="theme-heading">{{ .T "loggingOut" }}</h2>
+  <div>
+    <div class="dex-subtle-text">{{ .T "logoutConfirm" }}</div>
+  </div>
+  <div class="theme-form-row">
+    <form method="post" action="{{ .ReqPath }}">
+      <button type="submit" class="dex-btn theme-btn--primary">{{ .T "logOutConfirm" }}</button>
+    </form>
+  </div>
+  {{ else if .LoggedOut }}
   <h2 class="theme-heading">{{ .T "loggedOut" }}</h2>
   <div>
     <div class="dex-subtle-text">{{ .T "loggedOutDesc" }}</div>

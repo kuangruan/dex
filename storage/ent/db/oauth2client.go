@@ -9,6 +9,7 @@ import (
 
 	"entgo.io/ent"
 	"entgo.io/ent/dialect/sql"
+	"github.com/dexidp/dex/storage"
 	"github.com/dexidp/dex/storage/ent/db/oauth2client"
 )
 
@@ -37,7 +38,13 @@ type OAuth2Client struct {
 	PostLogoutRedirectUris []string `json:"post_logout_redirect_uris,omitempty"`
 	// SSOSharedWith holds the value of the "sso_shared_with" field.
 	SSOSharedWith []string `json:"sso_shared_with,omitempty"`
-	selectValues  sql.SelectValues
+	// BackchannelLogoutURI holds the value of the "backchannel_logout_uri" field.
+	BackchannelLogoutURI string `json:"backchannel_logout_uri,omitempty"`
+	// RefreshTokenLifetime holds the value of the "refresh_token_lifetime" field.
+	RefreshTokenLifetime string `json:"refresh_token_lifetime,omitempty"`
+	// ClientCredentialsClaims holds the value of the "client_credentials_claims" field.
+	ClientCredentialsClaims *storage.ClientCredentialsClaims `json:"client_credentials_claims,omitempty"`
+	selectValues            sql.SelectValues
 }
 
 // scanValues returns the types for scanning values from sql.Rows.
@@ -45,11 +52,11 @@ func (*OAuth2Client) scanValues(columns []string) ([]any, error) {
 	values := make([]any, len(columns))
 	for i := range columns {
 		switch columns[i] {
-		case oauth2client.FieldRedirectUris, oauth2client.FieldTrustedPeers, oauth2client.FieldAllowedConnectors, oauth2client.FieldMfaChain, oauth2client.FieldPostLogoutRedirectUris, oauth2client.FieldSSOSharedWith:
+		case oauth2client.FieldRedirectUris, oauth2client.FieldTrustedPeers, oauth2client.FieldAllowedConnectors, oauth2client.FieldMfaChain, oauth2client.FieldPostLogoutRedirectUris, oauth2client.FieldSSOSharedWith, oauth2client.FieldClientCredentialsClaims:
 			values[i] = new([]byte)
 		case oauth2client.FieldPublic:
 			values[i] = new(sql.NullBool)
-		case oauth2client.FieldID, oauth2client.FieldSecret, oauth2client.FieldName, oauth2client.FieldLogoURL:
+		case oauth2client.FieldID, oauth2client.FieldSecret, oauth2client.FieldName, oauth2client.FieldLogoURL, oauth2client.FieldBackchannelLogoutURI, oauth2client.FieldRefreshTokenLifetime:
 			values[i] = new(sql.NullString)
 		default:
 			values[i] = new(sql.UnknownType)
@@ -144,6 +151,26 @@ func (_m *OAuth2Client) assignValues(columns []string, values []any) error {
 					return fmt.Errorf("unmarshal field sso_shared_with: %w", err)
 				}
 			}
+		case oauth2client.FieldBackchannelLogoutURI:
+			if value, ok := values[i].(*sql.NullString); !ok {
+				return fmt.Errorf("unexpected type %T for field backchannel_logout_uri", values[i])
+			} else if value.Valid {
+				_m.BackchannelLogoutURI = value.String
+			}
+		case oauth2client.FieldRefreshTokenLifetime:
+			if value, ok := values[i].(*sql.NullString); !ok {
+				return fmt.Errorf("unexpected type %T for field refresh_token_lifetime", values[i])
+			} else if value.Valid {
+				_m.RefreshTokenLifetime = value.String
+			}
+		case oauth2client.FieldClientCredentialsClaims:
+			if value, ok := values[i].(*[]byte); !ok {
+				return fmt.Errorf("unexpected type %T for field client_credentials_claims", values[i])
+			} else if value != nil && len(*value) > 0 {
+				if err := json.Unmarshal(*value, &_m.ClientCredentialsClaims); err != nil {
+					return fmt.Errorf("unmarshal field client_credentials_claims: %w", err)
+				}
+			}
 		default:
 			_m.selectValues.Set(columns[i], values[i])
 		}
@@ -209,6 +236,15 @@ func (_m *OAuth2Client) String() string {
 	builder.WriteString(", ")
 	builder.WriteString("sso_shared_with=")
 	builder.WriteString(fmt.Sprintf("%v", _m.SSOSharedWith))
+	builder.WriteString(", ")
+	builder.WriteString("backchannel_logout_uri=")
+	builder.WriteString(_m.BackchannelLogoutURI)
+	builder.WriteString(", ")
+	builder.WriteString("refresh_token_lifetime=")
+	builder.WriteString(_m.RefreshTokenLifetime)
+	builder.WriteString(", ")
+	builder.WriteString("client_credentials_claims=")
+	builder.WriteString(fmt.Sprintf("%v", _m.ClientCredentialsClaims))
 	builder.WriteByte(')')
 	return builder.String()
 }

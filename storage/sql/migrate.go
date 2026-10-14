@@ -481,4 +481,48 @@ var migrations = []migration{
 		},
 		flavor: &flavorSQLite3,
 	},
+	{
+		stmts: []string{
+			`
+			alter table client
+				add column backchannel_logout_uri text not null default '';`,
+			`
+			alter table client
+				add column refresh_token_lifetime text not null default '';`,
+		},
+	},
+	{
+		// A session is keyed by its own id now, not by the user and connector it
+		// belongs to, so the table is rebuilt rather than altered: the primary key
+		// changes and the nonce is replaced by a secret the cookie carries.
+		//
+		// Rebuilt and not edited in place further up, because migrations are applied
+		// by number and never re-read: a database that already ran that step would
+		// otherwise never see these columns. Signed-in users are signed out once,
+		// which is what an unreleased session feature costs to reshape.
+		//
+		// connector_data is part of the rebuilt table so that databases which
+		// already added it keep the column across the rebuild.
+		stmts: []string{
+			`drop table if exists auth_session;`,
+			`
+			create table auth_session (
+				id text not null primary key,
+				secret text not null default '',
+				user_id text not null,
+				connector_id text not null,
+				client_states bytea not null,
+				created_at timestamptz not null,
+				last_activity timestamptz not null,
+				ip_address text not null default '',
+				user_agent text not null default '',
+				absolute_expiry timestamptz not null default '1970-01-01 00:00:00',
+				idle_expiry timestamptz not null default '1970-01-01 00:00:00',
+				connector_data bytea,
+				logout_state bytea
+			);`,
+			`create index auth_session_user_idx on auth_session (user_id, connector_id);`,
+			`alter table auth_code add column session_id text not null default '';`,
+		},
+	},
 }
